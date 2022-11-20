@@ -146,6 +146,7 @@ status: 401 Unauthorized
  ```
 
  If you want to create new data after application restart, you need to set "newDB" field to "true", else set to "false" in application.yml.
+ 
  The relevance (weight) must be specified between 0 and 1.
  # Project structure
  The application uses the concept of MVC.
