@@ -100,17 +100,17 @@ status: 401 Unauthorized
  A driver for connecting to the MySQL database has been added to the project. To run the project, make sure that you have a MySQL 8.x server running.
  If you have docker installed, you can run a container with ready-made settings for the project with the command:
  ```html
- docker run -d --name=search---engine -e="MYSQL_ROOT_PASSWORD=11111111" -e="MYSQL_DATABASE=search_engine" -p3306:3306 mysql
+ docker run -d --name=Search-engine -e="MYSQL_ROOT_PASSWORD=11111111" -e="MYSQL_DATABASE=search_engine" -p3306:3306 mysql
  ```
  The default user name is root, the project settings in src/resources/application.yml correspond to the container settings, you do not need to change them.
  
  ❗️ If you have a MacBook with an M1 processor, you need to use a special image for ARM processors:
  ```html
- docker run -d --name=springLemmaExample -e="MYSQL_ROOT_PASSWORD=Kimk7FjT" -e="MYSQL_DATABASE=lemma" -p3306:3306 arm64v8/mysql:oracle
+ docker run -d --name=Search-engine -e="MYSQL_ROOT_PASSWORD=11111111" -e="MYSQL_DATABASE=search_engine" -p3306:3306 arm64v8/mysql:oracle
  ```
  If you use MySQL without docker, then create a search_engine database and replace the username and password in the src/resources/application.yml configuration file:
  ```html
- spring.jpa.hibernate.ddl-auto: update (it can also be "create", "create-drop", "validate")
+ spring.jpa.hibernate.use-new-id-generator-mappings: false
  spring.datasource.url: jdbc:mysql://localhost:3306/search_engine?useSSL=false
  spring.datasource.username: root # user name
  spring.datasource.password: 11111111 # password
@@ -144,6 +144,9 @@ status: 401 Unauthorized
       selector: body
       weight: 0.8 # relevance
  ```
+
+ If you want to create new data after application restart, you need to set "newDB" field to "true", else set to "false" in application.yml.
+ 
  The relevance (weight) must be specified between 0 and 1.
  # Project structure
  The application uses the concept of MVC.
