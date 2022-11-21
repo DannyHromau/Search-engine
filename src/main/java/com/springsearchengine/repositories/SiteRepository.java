@@ -8,4 +8,7 @@ import org.springframework.stereotype.Repository;
 public interface SiteRepository extends CrudRepository<Site, Integer> {
 
     Site deleteSiteById(int id);
+    Site findSiteByUrl(String name);
+
+    Site findSiteById(int id);
 }

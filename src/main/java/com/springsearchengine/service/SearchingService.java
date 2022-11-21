@@ -5,7 +5,7 @@ import com.springsearchengine.config.ListOfSitesMetaData;
 import com.springsearchengine.dao.IndexElementCreator;
 import com.springsearchengine.dao.ManagerThread;
 import com.springsearchengine.dao.SearchEngineManager;
-import com.springsearchengine.dto.SearchPage;
+import com.springsearchengine.dto.SearchPageResponse;
 import com.springsearchengine.dto.SimpleResponse;
 import com.springsearchengine.dto.data.DataElement;
 import com.springsearchengine.dto.data.SearchPageData;
@@ -233,16 +233,15 @@ public class SearchingService {
         return generalInfo;
     }
 
-    public SearchPageData getSearchPage(String searchRequest, int limit) {
+    public SearchPageData getSearchPage(String searchRequest, int limit, String site) {
         SearchPageData searchPageData = new SearchPageData();
         List<DataElement> dataElements = new ArrayList<>();
-        List<SearchPage> searchPageList = searchEngineManager.getSearchPageList(searchRequest);
-        if (searchEngineManager.getSearchPageList(searchRequest).size() > 0) {
+        List<SearchPageResponse> searchPageResponseList = searchEngineManager.getSearchPageList(searchRequest, site);
+        if (searchEngineManager.getSearchPageList(searchRequest, site).size() > 0) {
             searchPageData.setResult(true);
-            for (SearchPage searchPage : searchPageList) {
-                String regexUri = "https:\\/\\/[A-z]+\\.[A-z]+\\.[A-z]{2,3}";
+            for (SearchPageResponse searchPageResponse : searchPageResponseList) {
                 String regexSite = "https:\\/\\/(.+?)\\/";
-                String url = searchPage.getUri();
+                String url = searchPageResponse.getUri();
                 Matcher matcher = Pattern.compile(regexSite).matcher(url);
                 String siteUrl = "";
                 while (matcher.find()) {
@@ -251,12 +250,11 @@ public class SearchingService {
                 siteUrl = "https://" + siteUrl;
                 DataElement dataElement =
                         new DataElement(siteUrl,
-                                searchPage.getUri().replaceAll("https:\\/\\/[A-z]+\\.", "")
-                                        .replaceAll("\\/.+", ""),
-                                searchPage.getUri().replaceAll(regexUri, ""),
-                                searchPage.getTitle(),
-                                searchPage.getSnippet(),
-                                searchPage.getRelevance());
+                                searchPageResponse.getName(),
+                                searchPageResponse.getUri().replaceAll(siteUrl, ""),
+                                searchPageResponse.getTitle(),
+                                searchPageResponse.getSnippet(),
+                                searchPageResponse.getRelevance());
                 dataElements.add(dataElement);
             }
             dataElements = limit > 0 ? dataElements
@@ -264,7 +262,7 @@ public class SearchingService {
                     .limit(limit)
                     .toList() : dataElements;
             searchPageData.setData(dataElements);
-            searchPageData.setCount(searchEngineManager.getSearchPageList(searchRequest).size());
+            searchPageData.setCount(searchEngineManager.getSearchPageList(searchRequest, site).size());
 
         } else {
             searchPageData.setResult(false);

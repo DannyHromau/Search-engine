@@ -1,4 +1,4 @@
-# Search-engine
+# search---engine
 This application is a Spring application (a JAR file that runs on any server or computer) that works with a locally installed MySQL database, has a simple web interface and API through which it can be managed and receive search results on request in Russian. The application is at the stage of checking the code style and optimizing the operation of the main components. However, you can use this application right now.
 # The principle of operation. 
 1.Before launching the application, specify in the configuration file the addresses of the sites on which the engine should search.
@@ -147,3 +147,5 @@ status: 401 Unauthorized
  The relevance (weight) must be specified between 0 and 1.
  # Project structure
  The application uses the concept of MVC.
+
+ 

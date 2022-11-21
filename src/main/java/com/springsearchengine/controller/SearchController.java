@@ -2,6 +2,7 @@ package com.springsearchengine.controller;
 
 
 import com.springsearchengine.dto.PageToPost;
+import com.springsearchengine.dto.SearchRequest;
 import com.springsearchengine.dto.SimpleResponse;
 import com.springsearchengine.dto.data.SearchPageData;
 import com.springsearchengine.dto.statistics.GeneralInfo;
@@ -10,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -44,9 +44,9 @@ public class SearchController {
     }
 
     @GetMapping("/search")
-    public SearchPageData getSearchingResult(@RequestParam String query, @RequestParam int offset) {
+    public SearchPageData getSearchingResult(SearchRequest searchRequest) {
 
-        SearchPageData searchPageData = searchingService.getSearchPage(query, pageCount);
+        SearchPageData searchPageData = searchingService.getSearchPage(searchRequest.getQuery(), pageCount, searchRequest.getSite());
         return searchPageData;
     }
 }

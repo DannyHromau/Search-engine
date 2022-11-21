@@ -17,5 +17,5 @@ fields:
     - name: body
       selector: body
       weight: 0.8
-resultPageLimit: 20
+#resultPageLimit: 20
 newDB: false
