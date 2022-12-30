@@ -1,4 +1,4 @@
-# search---engine
+# Search engine
 This application is a Spring application (a JAR file that runs on any server or computer) that works with a locally installed MySQL database, has a simple web interface and API through which it can be managed and receive search results on request in Russian. The application is at the stage of checking the code style and optimizing the operation of the main components. However, you can use this application right now.
 # The principle of operation. 
 1.Before launching the application, specify in the configuration file the addresses of the sites on which the engine should search.
@@ -97,23 +97,26 @@ status: 401 Unauthorized
   
  After that, try again to update this from pom.xml
  ## DB Connection Settings.
+ 
+ ❗️To create a database, you must use the scripts located in the "database.sql" file in the resources folder.
+ 
  A driver for connecting to the MySQL database has been added to the project. To run the project, make sure that you have a MySQL 8.x server running.
  If you have docker installed, you can run a container with ready-made settings for the project with the command:
  ```html
- docker run -d --name=Search-engine -e="MYSQL_ROOT_PASSWORD=11111111" -e="MYSQL_DATABASE=search_engine" -p3306:3306 mysql
+ docker run -d --name=Search-engine -e="MYSQL_ROOT_PASSWORD=<password>" -e="MYSQL_DATABASE=search_engine" -p3306:3306 mysql
  ```
  The default user name is root, the project settings in src/resources/application.yml correspond to the container settings, you do not need to change them.
  
  ❗️ If you have a MacBook with an M1 processor, you need to use a special image for ARM processors:
  ```html
- docker run -d --name=Search-engine -e="MYSQL_ROOT_PASSWORD=11111111" -e="MYSQL_DATABASE=search_engine" -p3306:3306 arm64v8/mysql:oracle
+ docker run -d --name=Search-engine -e="MYSQL_ROOT_PASSWORD=<password>" -e="MYSQL_DATABASE=search_engine" -p3306:3306 arm64v8/mysql:oracle
  ```
  If you use MySQL without docker, then create a search_engine database and replace the username and password in the src/resources/application.yml configuration file:
  ```html
  spring.jpa.hibernate.use-new-id-generator-mappings: false
  spring.datasource.url: jdbc:mysql://localhost:3306/search_engine?useSSL=false
  spring.datasource.username: root # user name
- spring.datasource.password: 11111111 # password
+ spring.datasource.password: <password> # password
  ```
  After that, you can start the project. If the correct data is entered, the project will start successfully. If the launch ends with errors, study the error text, make
  corrections and try again.
