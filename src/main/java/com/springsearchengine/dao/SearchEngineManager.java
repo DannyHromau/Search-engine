@@ -9,11 +9,10 @@ import com.springsearchengine.repositories.IndexRepository;
 import com.springsearchengine.repositories.LemmaRepository;
 import com.springsearchengine.repositories.PageDataRepository;
 import com.springsearchengine.repositories.SiteRepository;
+import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.*;
@@ -23,6 +22,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Component
+@Log4j2
 public class SearchEngineManager {
     public static Set<Site> siteSet = new HashSet<>();
     public volatile static boolean toStop;
@@ -34,8 +34,6 @@ public class SearchEngineManager {
     private LemmaRepository lemmaRepository;
     @Autowired
     private SiteRepository siteRepository;
-    @Autowired
-    private JdbcTemplate jdbcTemplate;
     private static RussianLemmatizer russianLemmatizer = RussianLemmatizer.getInstance();
 
 
@@ -50,10 +48,12 @@ public class SearchEngineManager {
         try {
             SiteTree tree = new SiteTree(site.getUrl());
             indexStorages = new ForkJoinPool().invoke(new IndexTask(tree, fieldConfig, site));
-            List<PageData> pageDataList = new ArrayList<>();
+            Set<PageData> pageDataList = new HashSet<>();
+            Set<String> pagePaths = new HashSet<>();
             Set<Index> indexSet = new HashSet<>();
             Set<Lemma> lemmaSet = new HashSet<>();
             for (IndexStorage indexStorage : indexStorages) {
+                pagePaths.add(indexStorage.getPageData().getPath());
                 lemmaSet.addAll(indexStorage.getLemmaSet());
                 indexStorage.getPageData().setSiteId(site.getId());
                 pageDataList.add(indexStorage.getPageData());
@@ -88,6 +88,7 @@ public class SearchEngineManager {
                 if (indexCount == lemmaSet.size()) {
                     site.setStatus(Status.INDEXED);
                     site.setLocalDateTime(LocalDateTime.now());
+                    site.setLastError("none");
                     siteRepository.save(site);
                 }
             }
@@ -96,6 +97,7 @@ public class SearchEngineManager {
                 if (toStop) {
                     site.setStatus(Status.FAILED);
                     site.setLastError("stopped by user");
+                    log.warn(site.getLastError());
                     break;
                 }
                 index.setLemmaId(index.getLemma().getId());
@@ -105,7 +107,8 @@ public class SearchEngineManager {
         } catch (Exception e) {
             site.setLocalDateTime(LocalDateTime.now());
             site.setStatus(Status.FAILED);
-            site.setLastError(e.toString());
+            site.setLastError("indexing error");
+            log.warn(e.getMessage());
 
         } finally {
             siteRepository.save(site);
@@ -120,7 +123,6 @@ public class SearchEngineManager {
         try {
             if (site != null){
              searchingSite = siteRepository.findSiteByUrl(site);}
-            int pagesCount = jdbcTemplate.queryForObject("select count(*) from `page_data`", Integer.class);
             Map<String, Double> lemmaWithCountMap = russianLemmatizer.getLemmaWithCount(text);
             List<Lemma> searchLemmaList = new ArrayList<>();
             Map<PageData, Double> relevantPageDataMap = new HashMap<>();
@@ -168,7 +170,7 @@ public class SearchEngineManager {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
         }
         return sortedRelevantMap;
     }
@@ -247,13 +249,14 @@ public class SearchEngineManager {
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
         }
         return snippetBuilder.toString();
     }
 
-    public boolean pageExist(String path, int siteId) throws IOException {
+    public boolean checkExistingPage(String path, int siteId) throws IllegalArgumentException{
         boolean pageExist = false;
+        checkPathRightFormat(path);
         List<PageData> pageDataList = pageDataRepository.findBySiteId(siteId);
         for (PageData pageData : pageDataList) {
             if (pageData.getPath().equals(path)) {
@@ -261,7 +264,15 @@ public class SearchEngineManager {
                 break;
             }
         }
+
         return pageExist;
+    }
+
+    public void checkPathRightFormat(String path) throws IllegalArgumentException{
+        String regex = "http.+";
+        if (!path.matches(regex)){
+            throw new IllegalArgumentException("Wrong format of path: " + path);
+        }
     }
 
     public Set<Site> getSiteSet() {

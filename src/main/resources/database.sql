@@ -1,7 +1,7 @@
 
-CREATE DATABASE IF NOT EXISTS `search_engine`
+CREATE DATABASE IF NOT EXISTS `search_engine`;
 
-USE search_engine
+USE search_engine;
 
 CREATE TABLE `page_data` (
   `id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`),
@@ -37,7 +37,7 @@ CREATE TABLE `page_index` (
   `id` INT NOT NULL AUTO_INCREMENT, PRIMARY KEY (`id`),
   `lemma_id` INT NOT NULL,
   `page_data_id` INT NOT NULL,
-  `rank` DOUBLE NOT NULL
+  `ran` DOUBLE NOT NULL
   )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;

@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 public class SearchController {
     @Autowired
-    private final SearchingService searchingService = new SearchingService();
+    private SearchingService searchingService;
     @Value(value = "${resultPageLimit}")
-    private static int pageCount;
+    private int pageCount;
 
     @GetMapping("/startIndexing")
     public SimpleResponse startIndexing() {

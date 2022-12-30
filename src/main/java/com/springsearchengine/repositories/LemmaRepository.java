@@ -12,4 +12,5 @@ public interface LemmaRepository extends CrudRepository<Lemma, Integer> {
      Lemma deleteLemmaBySiteId(int siteId);
      List<Lemma> findLemmaBySiteId(int siteId);
      List<Lemma> findLemmaByLemmaAndSiteId(String lemma, int siteId);
+     Boolean existsByLemma(String lemma);
 }

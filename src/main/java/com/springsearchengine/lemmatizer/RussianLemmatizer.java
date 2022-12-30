@@ -1,9 +1,9 @@
 package com.springsearchengine.lemmatizer;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.log4j.Log4j2;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Locale;
 
 @RequiredArgsConstructor
+@Log4j2
 public class RussianLemmatizer implements Lemmatizer {
     private final LuceneMorphology luceneMorphology;
 
@@ -20,7 +21,7 @@ public class RussianLemmatizer implements Lemmatizer {
         try {
             morphology = new RussianLuceneMorphology();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
         }
         return new RussianLemmatizer(morphology);
     }

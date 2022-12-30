@@ -1,4 +1,4 @@
-package com.searchenginetests;
+package com.springsearchengine;
 
 import com.springsearchengine.lemmatizer.RussianLemmatizer;
 import lombok.RequiredArgsConstructor;

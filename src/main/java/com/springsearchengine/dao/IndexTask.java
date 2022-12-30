@@ -3,6 +3,7 @@ package com.springsearchengine.dao;
 import com.springsearchengine.config.FieldConfig;
 import com.springsearchengine.model.IndexStorage;
 import com.springsearchengine.model.entity.Site;
+import lombok.extern.log4j.Log4j2;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.RecursiveTask;
 
+@Log4j2
 public class IndexTask extends RecursiveTask<Set<IndexStorage>> {
     private SiteTree tree;
     private static String rootPath;
@@ -58,7 +60,7 @@ public class IndexTask extends RecursiveTask<Set<IndexStorage>> {
                 }
                 String linkName = element.attr("abs:href");
                 if (!mapList.contains(linkName) && linkName.matches(path + ".+")
-                        && !linkName.contains("#") && !linkName.matches(".+pdf")) {
+                        && !linkName.contains("#") && !linkName.matches(".+pdf") && !linkName.contains("error")) {
                     SiteTree child = new SiteTree(linkName);
                     IndexTask task = new IndexTask(child, fieldConfig, site);
                     task.fork();
@@ -71,7 +73,7 @@ public class IndexTask extends RecursiveTask<Set<IndexStorage>> {
 
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.warn(e.getMessage());
         } finally {
             for (IndexTask task : taskList) {
                 indexSet.addAll(task.join());

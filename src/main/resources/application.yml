@@ -1,7 +1,7 @@
-spring.jpa.hibernate.ddl-auto: update
 spring.datasource.url: jdbc:mysql://localhost:3306/search_engine?useSSL=false
 spring.datasource.username: root
 spring.datasource.password: 11111111
+spring.jpa.hibernate.use-new-id-generator-mappings: false
 defaultPage: admin
 sites:
   siteList:
@@ -17,5 +17,5 @@ fields:
     - name: body
       selector: body
       weight: 0.8
-#resultPageLimit: 20
-newDB: false
+resultPageLimit: 100
+newDB:

@@ -22,6 +22,7 @@ import com.springsearchengine.repositories.IndexRepository;
 import com.springsearchengine.repositories.LemmaRepository;
 import com.springsearchengine.repositories.PageDataRepository;
 import com.springsearchengine.repositories.SiteRepository;
+import lombok.extern.log4j.Log4j2;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -39,6 +40,7 @@ import java.util.regex.Pattern;
 
 @Service
 @EnableConfigurationProperties(value = ListOfSitesMetaData.class)
+@Log4j2
 public class SearchingService {
     @Autowired
     private SearchEngineManager searchEngineManager;
@@ -54,8 +56,7 @@ public class SearchingService {
     private IndexRepository indexRepository;
     @Autowired
     private LemmaRepository lemmaRepository;
-    @Autowired
-    private SearchEngineManager manager;
+
     private static List<Thread> indexThreadsList = new ArrayList<>();
     private static List<SearchEngineManager> searchEngineManagerList = new ArrayList<>();
     @Autowired
@@ -64,13 +65,7 @@ public class SearchingService {
     public SimpleResponse startIndexing() {
         SearchEngineManager.toStop = false;
         SimpleResponse simpleResponse = new SimpleResponse();
-        int count = 0;
-        List<Site> sitesFromDB = (List<Site>) siteRepository.findAll();
-        for (Site site : sitesFromDB) {
-            if (site.getStatus().equals(Status.INDEXING)) {
-                count++;
-            }
-        }
+        int count = siteRepository.countByStatus(Status.INDEXING);
 
         if (count == 0) {
             jdbcTemplate.update("DELETE FROM page_data");
@@ -118,20 +113,16 @@ public class SearchingService {
     public SimpleResponse startSingleIndexing(String path) {
         SimpleResponse simpleResponse = new SimpleResponse();
         try {
-            List<Site> siteList = (List<Site>) siteRepository.findAll();
+            searchEngineManager.checkPathRightFormat(path);
             boolean siteExist = false;
-            boolean pageExist;
-            for (Site site : siteList) {
-                if (path.contains(site.getUrl())) {
+            for (ListOfSitesMetaData.SiteList siteList : listOfSitesMetaData.getSiteList()) {
+                if (path.contains(siteList.getUrl()) || siteList.getUrl().contains(path)){
                     siteExist = true;
-                    pageExist = manager.pageExist(path, site.getId());
-                    if (!pageExist) {
-                        pageDataRepository.deleteBySiteId(site.getId());
-                        lemmaRepository.deleteLemmaBySiteId(site.getId());
-                        siteRepository.deleteSiteById(site.getId());
-                        SearchEngineManager searchEngineManager = new SearchEngineManager();
-                        searchEngineManager.startIndexing(site, fieldConfig);
-                    }
+                    Site site = siteRepository.findSiteByUrl(siteList.getUrl());
+                    pageDataRepository.deleteBySiteId(site.getId());
+                    lemmaRepository.deleteLemmaBySiteId(site.getId());
+                    siteRepository.deleteSiteById(site.getId());
+                    searchEngineManager.startIndexing(site, fieldConfig);
                     break;
                 }
             }
@@ -139,24 +130,29 @@ public class SearchingService {
             if (!siteExist) {
                 simpleResponse.setError("This page is not existing on the indexed list of sites");
             }
-        } catch (IOException e) {
+        } catch (IllegalArgumentException e) {
             simpleResponse.setResult(false);
-            simpleResponse.setError(e.getMessage());
+            simpleResponse.setError("Wrong path`s format!");
+            log.warn(simpleResponse.getError());
         }
         return simpleResponse;
     }
 
     public SimpleResponse savePageByUrl(String url) {
         SimpleResponse simpleResponse = new SimpleResponse();
+        boolean siteExist = false;
+        boolean pageExist = true;
+        Site site = new Site();
         try {
-
-            List<Site> siteList = (List<Site>) siteRepository.findAll();
-            boolean siteExist = false;
-            boolean pageExist;
-            for (Site site : siteList) {
-                if (url.contains(site.getUrl())) {
+            searchEngineManager.checkPathRightFormat(url);
+            for (ListOfSitesMetaData.SiteList siteList : listOfSitesMetaData.getSiteList()) {
+                if (url.contains(siteList.getUrl()) || siteList.getUrl().contains(url)){
+                    site = siteRepository.findSiteByUrl(siteList.getUrl());
                     siteExist = true;
-                    pageExist = manager.pageExist(url, site.getId());
+                    pageExist = searchEngineManager.checkExistingPage(url, site.getId());
+                    break;
+                }
+            }
                     if (!pageExist) {
                         Connection connection = Jsoup.connect(url);
                         Document document = connection
@@ -167,26 +163,21 @@ public class SearchingService {
                         IndexElementCreator indexElementCreator = new IndexElementCreator(document, fieldConfig, site);
                         IndexStorage indexStorage = indexElementCreator.getIndexStorage();
                         pageDataRepository.save(indexStorage.getPageData());
-                        List<Lemma> lemmaList = (List<Lemma>) lemmaRepository.findAll();
-                        for (Lemma lemma : lemmaList) {
-                            for (Lemma lemma1 : indexStorage.getLemmaSet()) {
-                                if (lemma1.getLemma().equals(lemma.getLemma())) {
-                                    lemma1.setFrequency(lemma.getFrequency() + 1);
-                                    lemma1.setSiteId(lemma.getSiteId());
-                                    lemma1.setId(lemma.getId());
-                                    lemma = lemma1;
-                                    lemmaRepository.save(lemma);
+                            for (Lemma addingLemma : indexStorage.getLemmaSet()) {
+                                if (lemmaRepository.existsByLemma(addingLemma.getLemma())) {
+                                    Lemma existingLemma = (Lemma) lemmaRepository.findByLemma(addingLemma.getLemma());
+                                    addingLemma.setFrequency(existingLemma.getFrequency() + 1);
+                                    addingLemma.setSiteId(existingLemma.getSiteId());
+                                    addingLemma.setId(existingLemma.getId());
+                                    existingLemma = addingLemma;
+                                    lemmaRepository.save(existingLemma);
                                 }
-                                lemma1.setFrequency(1);
-                                lemmaRepository.save(lemma1);
+                                addingLemma.setFrequency(1);
+                                lemmaRepository.save(addingLemma);
                             }
-                        }
-                        indexStorage.getIndexSet().forEach(indexRepository::save);
 
+                        indexStorage.getIndexSet().forEach(indexRepository::save);
                     }
-                    break;
-                }
-            }
             simpleResponse.setResult(siteExist);
             if (!siteExist) {
                 simpleResponse.setError("Данная страница находится за пределами сайтов, " +
@@ -195,6 +186,11 @@ public class SearchingService {
         } catch (IOException e) {
             simpleResponse.setResult(false);
             simpleResponse.setError(e.getMessage());
+            log.warn(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            simpleResponse.setResult(false);
+            simpleResponse.setError("Wrong path`s format!");
+            log.warn(simpleResponse.getError());
         }
         return simpleResponse;
     }
